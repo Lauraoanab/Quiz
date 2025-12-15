@@ -134,6 +134,15 @@
       display:inline-block;
       opacity:0.95;
     }
+    /* FIX iOS safe-area – primul rând de teste tăiat */
+@supports (padding: env(safe-area-inset-top)) {
+  .modal {
+    padding-top: calc(18px + env(safe-area-inset-top));
+  }
+}
+    .overlay{
+  overflow-y: auto;
+}
   </style>
 </head>
 
