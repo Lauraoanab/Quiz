@@ -878,34 +878,28 @@ function isCorrectAnswer(userAnswer, correct){
   }
 
   // ===== STARTUP =====
-  if(loadProgress()){
+if (loadProgress()) {
   showOverlay("overlayMode", false);
-  // ...
+
+  // dacă ești în mijlocul jocului, intri direct acolo; altfel la test list
+  if (gameState === "playing") {
+    loadQuestion();
+  } else if (gameState === "testDone") {
+    // arată rezultatul testului curent și apoi user apasă "Înapoi la teste"
+    finishTest();
+  } else {
+    // allDone
+    document.getElementById("question").innerText = "🎉 Ai terminat!";
+    document.getElementById("result").innerText = "";
+    document.getElementById("hint").innerText = "";
+    setControlsEnabled(false);
+    setNextEnabled(true);
+    document.getElementById("nextBtn").innerText = "Reia de la început";
+    updateMeta();
+  }
 } else {
   showOverlay("overlayMode", true);
 }
-
-    // dacă ești în mijlocul jocului, intri direct acolo; altfel la test list
-    if(gameState === "playing"){
-      loadQuestion();
-    } else if(gameState === "testDone"){
-      // arată rezultatul testului curent și apoi user apasă "Înapoi la teste"
-      finishTest();
-    } else {
-      // allDone
-      document.getElementById("question").innerText = "🎉 Ai terminat!";
-      document.getElementById("result").innerText = "";
-      document.getElementById("hint").innerText = "";
-      setControlsEnabled(false);
-      setNextEnabled(true);
-      document.getElementById("nextBtn").innerText = "Reia de la început";
-      updateMeta();
-    }
-
-    // poți deschide oricând lista de teste din butonul "📚 Teste"
-  } else {
-    showOverlay("overlayMode", true);
-  }
 </script>
 
 </body>
