@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Afla ce nu stii!</title>
+
+  <!-- Icon iPhone -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Afla ce nu stii!">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
     body {
@@ -12,14 +20,13 @@
       padding: 20px;
       text-align: center;
     }
-
-    h1 { font-size: 28px; margin-bottom: 10px; }
+    h1 { font-size: 28px; margin: 10px 0 14px; }
 
     .card {
       background: rgba(255,255,255,0.15);
       border-radius: 16px;
-      padding: 20px;
-      max-width: 520px;
+      padding: 18px;
+      max-width: 560px;
       margin: auto;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
@@ -27,15 +34,13 @@
     .meta {
       display: flex;
       justify-content: space-between;
+      gap: 10px;
       font-size: 14px;
       margin-bottom: 12px;
-      gap: 10px;
+      opacity: 0.95;
     }
 
-    .question {
-      font-size: 20px;
-      margin-bottom: 16px;
-    }
+    .question { font-size: 20px; margin: 10px 0 14px; }
 
     input {
       width: 92%;
@@ -53,53 +58,31 @@
       font-size: 16px;
       margin: 6px 0;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 800;
       width: 100%;
     }
 
-    /* butoane principale */
-    .main-btn {
-      background: #ffd166;
-      color: #333;
-    }
+    .main-btn { background: #ffd166; color: #333; }
 
-    /* variante de răspuns – GALBEN implicit */
-    .answer-btn {
-      background: #ffd166;
-      color: #333;
-    }
+    /* opțiuni: GALBEN implicit */
+    .answer-btn { background: #ffd166; color: #333; }
 
     /* feedback */
-    .correct {
-      background: #06d6a0 !important;
-      color: #003 !important;
-    }
+    .correct { background: #06d6a0 !important; color: #003 !important; }
+    .wrong { background: #ef476f !important; color: #fff !important; }
 
-    .wrong {
-      background: #ef476f !important;
-      color: white !important;
-    }
-
-    .disabled {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    .answers {
-      display: none;
-      margin-top: 10px;
-    }
+    .answers { display: none; margin-top: 8px; }
 
     .result {
-      margin-top: 14px;
+      margin-top: 12px;
       font-size: 18px;
-      font-weight: bold;
+      font-weight: 900;
     }
+    .hint { margin-top: 6px; font-size: 14px; opacity: 0.92; }
 
-    .small {
-      font-size: 12px;
-      opacity: 0.9;
-    }
+    .disabled { pointer-events: none; opacity: 0.7; }
+
+    .row { display: grid; gap: 8px; margin-top: 6px; }
   </style>
 </head>
 
@@ -116,74 +99,199 @@
 
     <input type="text" id="textAnswer" placeholder="Scrie răspunsul tău..." />
 
-    <button class="main-btn" onclick="checkTextAnswer()">Verifică răspunsul</button>
-    <button class="main-btn" onclick="toggleAnswers()">Afișează variantele de răspuns</button>
+    <div class="row">
+      <button class="main-btn" id="checkBtn" onclick="checkTextAnswer()">Verifică răspunsul</button>
+      <button class="main-btn" id="toggleBtn" onclick="toggleAnswers()">Afișează variantele de răspuns</button>
+    </div>
 
     <div class="answers" id="answers"></div>
 
     <div class="result" id="result"></div>
-    <div class="small" id="hint"></div>
+    <div class="hint" id="hint"></div>
 
-    <button class="main-btn" id="nextBtn" onclick="nextQuestion()">Următoarea întrebare</button>
+    <button class="main-btn" id="nextBtn" onclick="nextStep()">Următoarea întrebare</button>
   </div>
 
 <script>
-  // ✅ 10 întrebări (nu se repetă; jocul se oprește la final)
-  const questions = [
-    { q:"Care este cea mai mare planetă din Sistemul Solar?", correct:"Jupiter", options:["Marte","Jupiter","Saturn","Neptun"] },
-    { q:"În ce an a ajuns omul pe Lună?", correct:"1969", options:["1959","1965","1969","1972"] },
-    { q:"Care este capitala Japoniei?", correct:"Tokyo", options:["Kyoto","Seul","Tokyo","Osaka"] },
-    { q:"Cine a pictat Mona Lisa?", correct:"Leonardo da Vinci", options:["Michelangelo","Van Gogh","Leonardo da Vinci","Raphael"] },
-    { q:"Care este cel mai mare ocean?", correct:"Pacific", options:["Atlantic","Indian","Arctic","Pacific"] },
-    { q:"Câte continente există?", correct:"7", options:["5","6","7","8"] },
-    { q:"Care este cel mai înalt munte din lume?", correct:"Everest", options:["K2","Everest","Mont Blanc","Kilimanjaro"] },
-    { q:"Ce țară are forma de „cizmă” pe hartă?", correct:"Italia", options:["Spania","Italia","Grecia","Portugalia"] },
-    { q:"Ce gaz este cel mai abundent în atmosfera Pământului?", correct:"Azot", options:["Oxigen","Dioxid de carbon","Azot","Hidrogen"] },
-    { q:"Care este formula chimică a apei?", correct:"H2O", options:["CO2","O2","H2O","NaCl"] }
+  // =========================
+  // 100 întrebări (10 teste x 10)
+  // =========================
+  const QUESTIONS = [
+    // Test 1 (1-10)
+    {q:"Care este capitala Franței?", c:"Paris", o:["Paris","Lyon","Marseille","Nisa"]},
+    {q:"Câte continente există pe Pământ (modelul uzual)?", c:"7", o:["5","6","7","8"]},
+    {q:"Care este cea mai mare planetă din Sistemul Solar?", c:"Jupiter", o:["Marte","Jupiter","Saturn","Neptun"]},
+    {q:"În ce an a ajuns omul pe Lună?", c:"1969", o:["1959","1965","1969","1972"]},
+    {q:"Care este capitala Japoniei?", c:"Tokyo", o:["Kyoto","Seul","Tokyo","Osaka"]},
+    {q:"Formula chimică a apei este…", c:"H2O", o:["CO2","O2","H2O","NaCl"]},
+    {q:"Cel mai mare ocean al lumii este…", c:"Pacific", o:["Atlantic","Indian","Arctic","Pacific"]},
+    {q:"Care este simbolul chimic pentru aur?", c:"Au", o:["Ag","Au","Fe","Hg"]},
+    {q:"Cine a pictat Mona Lisa?", c:"Leonardo da Vinci", o:["Michelangelo","Van Gogh","Leonardo da Vinci","Picasso"]},
+    {q:"Câți ani are un deceniu?", c:"10", o:["5","10","12","20"]},
+
+    // Test 2 (11-20)
+    {q:"Ce țară are forma de „cizmă” pe hartă?", c:"Italia", o:["Spania","Italia","Grecia","Portugalia"]},
+    {q:"Ce gaz este cel mai abundent în atmosfera Pământului?", c:"Azot", o:["Oxigen","Azot","CO2","Hidrogen"]},
+    {q:"Cel mai înalt munte din lume este…", c:"Everest", o:["K2","Everest","Mont Blanc","Kilimanjaro"]},
+    {q:"Care este capitala României?", c:"București", o:["Cluj-Napoca","Iași","Timișoara","București"]},
+    {q:"Ce organ pompează sângele în corp?", c:"Inima", o:["Plămânul","Ficatul","Inima","Rinichiul"]},
+    {q:"Cine a scris „Romeo și Julieta”?", c:"William Shakespeare", o:["Goethe","Shakespeare","Dante","Molière"]},
+    {q:"Care este cea mai mică unitate a vieții?", c:"Celula", o:["Atomul","Molecula","Celula","Organul"]},
+    {q:"Care este moneda oficială a SUA?", c:"Dolarul", o:["Euro","Dolarul","Lira","Yenul"]},
+    {q:"Care este capitala Germaniei?", c:"Berlin", o:["Hamburg","Munchen","Frankfurt","Berlin"]},
+    {q:"În ce sport se folosește termenul „love” pentru 0?", c:"Tenis", o:["Fotbal","Baschet","Tenis","Rugby"]},
+
+    // Test 3 (21-30)
+    {q:"Ce planetă este numită „Planeta Roșie”?", c:"Marte", o:["Venus","Marte","Mercur","Uranus"]},
+    {q:"Care este capitala Spaniei?", c:"Madrid", o:["Barcelona","Sevilla","Madrid","Valencia"]},
+    {q:"Ce instrument măsoară temperatura?", c:"Termometru", o:["Barometru","Higrometru","Termometru","Altimetru"]},
+    {q:"Care este cel mai lung fluviu din lume (conform multor surse uzuale)?", c:"Nilul", o:["Amazonul","Nilul","Yangtze","Mississippi"]},
+    {q:"Câte minute are o oră?", c:"60", o:["50","60","90","100"]},
+    {q:"Care este capitala Greciei?", c:"Atena", o:["Atena","Salonic","Patras","Heraklion"]},
+    {q:"Care este cel mai mare mamifer?", c:"Balena albastră", o:["Elefantul","Balena albastră","Girafa","Rechinul alb"]},
+    {q:"Care este elementul chimic cu simbolul O?", c:"Oxigen", o:["Osmium","Oxigen","Aur","Zinc"]},
+    {q:"Ce se măsoară în wați (W)?", c:"Puterea", o:["Tensiunea","Curentul","Puterea","Rezistența"]},
+    {q:"Cine a formulat teoria relativității?", c:"Albert Einstein", o:["Newton","Einstein","Galilei","Tesla"]},
+
+    // Test 4 (31-40)
+    {q:"Care este capitala Portugaliei?", c:"Lisabona", o:["Porto","Lisabona","Braga","Faro"]},
+    {q:"Cum se numește procesul prin care plantele își produc hrana?", c:"Fotosinteza", o:["Respirația","Fermentația","Fotosinteza","Evaporarea"]},
+    {q:"În ce țară se află orașul Marrakech?", c:"Maroc", o:["Egipt","Maroc","Algeria","Tunisia"]},
+    {q:"Care este capitala Canadei?", c:"Ottawa", o:["Toronto","Vancouver","Ottawa","Montreal"]},
+    {q:"Care este cea mai mare țară ca suprafață?", c:"Rusia", o:["Canada","China","SUA","Rusia"]},
+    {q:"Ce număr roman reprezintă X?", c:"10", o:["5","10","50","100"]},
+    {q:"Cum se numește cel mai mare deșert cald?", c:"Sahara", o:["Gobi","Sahara","Kalahari","Atacama"]},
+    {q:"În ce oraș se află Colosseumul?", c:"Roma", o:["Atena","Roma","Paris","Istanbul"]},
+    {q:"Ce limbă se vorbește oficial în Brazilia?", c:"Portugheză", o:["Spaniolă","Portugheză","Franceză","Italiană"]},
+    {q:"Câte zile are un an bisect?", c:"366", o:["365","366","364","360"]},
+
+    // Test 5 (41-50)
+    {q:"Care este capitala Turciei?", c:"Ankara", o:["Istanbul","Izmir","Ankara","Bursa"]},
+    {q:"Ce planetă este cea mai apropiată de Soare?", c:"Mercur", o:["Mercur","Venus","Marte","Saturn"]},
+    {q:"Care este capitala Egiptului?", c:"Cairo", o:["Alexandria","Giza","Cairo","Luxor"]},
+    {q:"Cum se numește unitatea de măsură pentru frecvență?", c:"Hertz", o:["Newton","Hertz","Joule","Pascal"]},
+    {q:"Ce organ este responsabil în principal cu detoxifierea sângelui?", c:"Ficatul", o:["Plămânii","Ficatul","Stomacul","Pielea"]},
+    {q:"Care este capitala Austriei?", c:"Viena", o:["Viena","Graz","Salzburg","Linz"]},
+    {q:"În ce sport se marchează „touchdown”?", c:"Fotbal american", o:["Rugby","Fotbal american","Hochei","Cricket"]},
+    {q:"Ce metal are simbolul Fe?", c:"Fier", o:["Fluor","Fier","Fosfor","Franciu"]},
+    {q:"Cine a scris „Ion”?", c:"Liviu Rebreanu", o:["M. Eminescu","L. Rebreanu","I.L. Caragiale","C. Petrescu"]},
+    {q:"Care este capitala Suediei?", c:"Stockholm", o:["Oslo","Stockholm","Helsinki","Copenhaga"]},
+
+    // Test 6 (51-60)
+    {q:"Care este capitala Norvegiei?", c:"Oslo", o:["Oslo","Bergen","Trondheim","Stavanger"]},
+    {q:"Ce instrument măsoară presiunea atmosferică?", c:"Barometru", o:["Termometru","Barometru","Anemometru","Cronometru"]},
+    {q:"În ce țară se află Machu Picchu?", c:"Peru", o:["Mexic","Peru","Chile","Bolivia"]},
+    {q:"Care este capitala Chinei?", c:"Beijing", o:["Shanghai","Beijing","Hong Kong","Shenzhen"]},
+    {q:"Ce planetă are inele foarte vizibile?", c:"Saturn", o:["Jupiter","Saturn","Marte","Venus"]},
+    {q:"Câte secunde are un minut?", c:"60", o:["30","45","60","90"]},
+    {q:"Care este capitala Elveției?", c:"Berna", o:["Zurich","Geneva","Berna","Basel"]},
+    {q:"Ce este „CPU” într-un computer?", c:"Procesorul", o:["Memoria","Procesorul","Placa video","Hard disk-ul"]},
+    {q:"În ce continent se află Kenya?", c:"Africa", o:["Asia","Europa","Africa","America de Sud"]},
+    {q:"Care este cel mai dur mineral pe scara Mohs?", c:"Diamant", o:["Cuarț","Granit","Diamant","Safir"]},
+
+    // Test 7 (61-70)
+    {q:"Care este capitala Australiei?", c:"Canberra", o:["Sydney","Melbourne","Canberra","Perth"]},
+    {q:"Cine a compus „Anotimpurile” (The Four Seasons)?", c:"Vivaldi", o:["Mozart","Bach","Vivaldi","Beethoven"]},
+    {q:"Ce număr roman reprezintă L?", c:"50", o:["20","40","50","100"]},
+    {q:"Care este capitala Irlandei?", c:"Dublin", o:["Dublin","Cork","Galway","Belfast"]},
+    {q:"Ce organ ajută la respirație?", c:"Plămânii", o:["Inima","Plămânii","Ficatul","Pancreasul"]},
+    {q:"În ce sport se folosește „puck”?", c:"Hochei", o:["Tenis","Hochei","Handbal","Golf"]},
+    {q:"Ce instrument măsoară viteza vântului?", c:"Anemometru", o:["Barometru","Anemometru","Hidrometru","Volmetru"]},
+    {q:"Câte coarde are o vioară?", c:"4", o:["4","5","6","7"]},
+    {q:"Care este capitala Poloniei?", c:"Varșovia", o:["Kraków","Gdańsk","Varșovia","Wrocław"]},
+    {q:"Ce continent are cele mai multe țări?", c:"Africa", o:["Europa","Africa","Asia","America de Nord"]},
+
+    // Test 8 (71-80)
+    {q:"În ce țară se află Taj Mahal?", c:"India", o:["Pakistan","India","Nepal","Sri Lanka"]},
+    {q:"Care este capitala Olandei?", c:"Amsterdam", o:["Rotterdam","Haga","Amsterdam","Utrecht"]},
+    {q:"Ce vitamină este asociată cu lumina soarelui?", c:"Vitamina D", o:["Vitamina A","Vitamina B12","Vitamina C","Vitamina D"]},
+    {q:"Cine a scris „Divina Comedie”?", c:"Dante Alighieri", o:["Dante","Homer","Virgiliu","Cervantes"]},
+    {q:"Care este capitala Ungariei?", c:"Budapesta", o:["Budapesta","Debrecen","Szeged","Pécs"]},
+    {q:"Câte elemente are tabelul periodic (recunoscut în prezent)?", c:"118", o:["112","116","118","120"]},
+    {q:"Care este capitala Belgiei?", c:"Bruxelles", o:["Bruxelles","Anvers","Gent","Bruges"]},
+    {q:"Ce culoare rezultă din amestecul albastru + galben?", c:"Verde", o:["Violet","Portocaliu","Verde","Roșu"]},
+    {q:"În ce țară se află Marea Barieră de Corali?", c:"Australia", o:["Australia","Indonezia","Filipine","Noua Zeelandă"]},
+    {q:"Care este capitala Danemarcei?", c:"Copenhaga", o:["Copenhaga","Aarhus","Odense","Malmo"]},
+
+    // Test 9 (81-90)
+    {q:"Care este capitala Finlandei?", c:"Helsinki", o:["Helsinki","Turku","Tampere","Oulu"]},
+    {q:"Cine a pictat „Noaptea înstelată”?", c:"Vincent van Gogh", o:["Monet","Van Gogh","Da Vinci","Rembrandt"]},
+    {q:"În ce oraș se află Turnul Eiffel?", c:"Paris", o:["Londra","Roma","Paris","Berlin"]},
+    {q:"Ce limbă are alfabetul chirilic ca bază în multe țări?", c:"Rusă", o:["Greacă","Rusă","Arabă","Ebraică"]},
+    {q:"Care este capitala Cehiei?", c:"Praga", o:["Brno","Praga","Ostrava","Plzen"]},
+    {q:"Ce ocean spală coasta de est a SUA?", c:"Atlantic", o:["Pacific","Atlantic","Indian","Arctic"]},
+    {q:"Care este cel mai mare organ al corpului uman?", c:"Pielea", o:["Inima","Pielea","Ficatul","Plămânii"]},
+    {q:"Câte luni are un an?", c:"12", o:["10","11","12","13"]},
+    {q:"Ce țară are capitala la Viena?", c:"Austria", o:["Australia","Austria","Elveția","Belgia"]},
+    {q:"Cum se numește știința care studiază cutremurele?", c:"Seismologie", o:["Meteorologie","Seismologie","Ecologie","Astronomie"]},
+
+    // Test 10 (91-100)
+    {q:"Care este capitala Argentinei?", c:"Buenos Aires", o:["Santiago","Montevideo","Buenos Aires","Lima"]},
+    {q:"Care este capitala Mexicului?", c:"Ciudad de México", o:["Guadalajara","Monterrey","Ciudad de México","Cancún"]},
+    {q:"În ce sport se folosește termenul „checkmate”?", c:"Șah", o:["Șah","Go","Bridge","Dame"]},
+    {q:"Care este capitala Thailandei?", c:"Bangkok", o:["Bangkok","Phuket","Chiang Mai","Pattaya"]},
+    {q:"Ce planetă este cunoscută ca „Luceafărul de dimineață” (în mod popular)?", c:"Venus", o:["Venus","Marte","Mercur","Jupiter"]},
+    {q:"Câte grade are un unghi drept?", c:"90", o:["45","60","90","180"]},
+    {q:"Care este capitala Coreei de Sud?", c:"Seul", o:["Busan","Seul","Incheon","Daegu"]},
+    {q:"Cum se numește moneda Japoniei?", c:"Yen", o:["Yuan","Won","Yen","Rupie"]},
+    {q:"Ce instrument are taste albe și negre și corzi în interior?", c:"Pian", o:["Chitară","Pian","Vioară","Flaut"]},
+    {q:"Ce continent este cel mai mic ca suprafață?", c:"Australia", o:["Europa","Australia","America de Sud","Antarctica"]},
   ];
 
-  let current = 0;
-  let score = 0;
-  let answered = false;
-  let gameOver = false;
-
-  function updateMeta() {
-    document.getElementById("progress").innerText =
-      gameOver ? `Final` : `Întrebarea ${current + 1}/${questions.length}`;
-    document.getElementById("score").innerText = `Scor: ${score}`;
+  // =========================
+  // Logică teste
+  // =========================
+  const TESTS = [];
+  for (let i = 0; i < 10; i++) {
+    TESTS.push(QUESTIONS.slice(i * 10, i * 10 + 10));
   }
 
+  let testIndex = 0;      // 0..9
+  let qIndex = 0;         // 0..9
+  let answered = false;
+  let gameState = "playing"; // playing | testDone | allDone
+  let scoreTest = 0;
+  let scoreTotal = 0;
+
   function normalize(s) {
-    return (s || "").toLowerCase().trim()
+    return (s || "")
+      .trim()
+      .toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
-  function toggleAnswers() {
-    if (gameOver) return;
-    document.getElementById("answers").style.display = "block";
+  function currentQ() {
+    return TESTS[testIndex][qIndex];
   }
 
-  function disableAllAnswers() {
-    document.querySelectorAll(".answer-btn").forEach(b => b.classList.add("disabled"));
+  function updateMeta() {
+    const progressEl = document.getElementById("progress");
+    const scoreEl = document.getElementById("score");
+
+    if (gameState === "playing") {
+      progressEl.innerText = `Test ${testIndex + 1}/10 • Întrebarea ${qIndex + 1}/10`;
+    } else if (gameState === "testDone") {
+      progressEl.innerText = `Test ${testIndex + 1}/10 terminat`;
+    } else {
+      progressEl.innerText = `Toate testele terminate`;
+    }
+
+    scoreEl.innerText = `Test: ${scoreTest}/10 • Total: ${scoreTotal}/100`;
   }
 
-  function setMainControlsDisabled(disabled) {
-    document.getElementById("textAnswer").disabled = disabled;
-    // blocăm butoanele principale doar prin pointer-events/opacity ca să arate bine
-    document.querySelectorAll(".main-btn").forEach(btn => {
-      // nextBtn rămâne activ
-      if (btn.id !== "nextBtn") {
-        btn.classList.toggle("disabled", disabled);
-      }
-    });
+  function setControlsEnabled(enabled) {
+    document.getElementById("textAnswer").disabled = !enabled;
+    document.getElementById("checkBtn").classList.toggle("disabled", !enabled);
+    document.getElementById("toggleBtn").classList.toggle("disabled", !enabled);
+    document.getElementById("answers").classList.toggle("disabled", !enabled);
   }
 
-  function buildAnswerButtons() {
+  function buildAnswers() {
     const answersDiv = document.getElementById("answers");
     answersDiv.innerHTML = "";
     answersDiv.style.display = "none";
 
-    questions[current].options.forEach(opt => {
+    currentQ().o.forEach(opt => {
       const btn = document.createElement("button");
       btn.innerText = opt;
       btn.className = "answer-btn";
@@ -193,80 +301,102 @@
   }
 
   function loadQuestion() {
-    gameOver = false;
     answered = false;
+    gameState = "playing";
 
-    document.getElementById("question").innerText = questions[current].q;
+    document.getElementById("question").innerText = currentQ().q;
     document.getElementById("textAnswer").value = "";
     document.getElementById("result").innerText = "";
     document.getElementById("hint").innerText = "";
-
-    buildAnswerButtons();
-    setMainControlsDisabled(false);
-    updateMeta();
-
     document.getElementById("nextBtn").innerText = "Următoarea întrebare";
+
+    buildAnswers();
+    setControlsEnabled(true);
+    updateMeta();
   }
 
-  function showResult(isCorrect, chosenButton = null) {
-    if (answered) return;
+  function toggleAnswers() {
+    if (gameState !== "playing") return;
+    document.getElementById("answers").style.display = "block";
+  }
+
+  function disableAllAnswers() {
+    document.querySelectorAll(".answer-btn").forEach(b => b.classList.add("disabled"));
+  }
+
+  function showResult(isCorrect, chosenButton) {
+    if (answered || gameState !== "playing") return;
     answered = true;
 
     if (isCorrect) {
-      score++;
+      scoreTest++;
+      scoreTotal++;
       document.getElementById("result").innerText = "✅ Corect!";
       if (chosenButton) chosenButton.classList.add("correct");
     } else {
       document.getElementById("result").innerText = "❌ Greșit!";
-      document.getElementById("hint").innerText = "Răspuns corect: " + questions[current].correct;
+      document.getElementById("hint").innerText = "Răspuns corect: " + currentQ().c;
       if (chosenButton) chosenButton.classList.add("wrong");
     }
 
     disableAllAnswers();
-    setMainControlsDisabled(true);
+    setControlsEnabled(false);
     updateMeta();
   }
 
   function checkOption(button, option) {
-    const correct = normalize(questions[current].correct);
-    const chosen = normalize(option);
-    showResult(chosen === correct, button);
+    const ok = normalize(option) === normalize(currentQ().c);
+    showResult(ok, button);
   }
 
   function checkTextAnswer() {
-    const answer = normalize(document.getElementById("textAnswer").value);
-    const correct = normalize(questions[current].correct);
-    showResult(answer === correct, null);
+    const ok = normalize(document.getElementById("textAnswer").value) === normalize(currentQ().c);
+    showResult(ok, null);
   }
 
-  function endGame() {
-    gameOver = true;
-    document.getElementById("question").innerText = "🎉 Joc terminat!";
-    document.getElementById("result").innerText = `Scor final: ${score}/${questions.length}`;
-    document.getElementById("hint").innerText = "Apasă „Repornește jocul” ca să joci din nou.";
+  function finishTest() {
+    gameState = (testIndex < 9) ? "testDone" : "allDone";
+
+    document.getElementById("question").innerText =
+      (gameState === "testDone") ? "✅ Test terminat!" : "🎉 Ai terminat toate testele!";
+
+    const base = `Scor test: ${scoreTest}/10`;
+    const total = `Scor total: ${scoreTotal}/100`;
+    document.getElementById("result").innerText = base;
+    document.getElementById("hint").innerText = total;
 
     document.getElementById("answers").style.display = "none";
     document.getElementById("answers").innerHTML = "";
-    setMainControlsDisabled(true);
+    setControlsEnabled(false);
 
-    document.getElementById("nextBtn").innerText = "Repornește jocul";
+    document.getElementById("nextBtn").innerText =
+      (gameState === "testDone") ? "Treci la următorul test" : "Reia de la Testul 1";
+
     updateMeta();
   }
 
-  function nextQuestion() {
-    // restart dacă jocul s-a terminat
-    if (gameOver) {
-      current = 0;
-      score = 0;
+  function nextStep() {
+    if (gameState === "testDone") {
+      testIndex++;
+      qIndex = 0;
+      scoreTest = 0;
       loadQuestion();
       return;
     }
 
-    // trecem la următoarea întrebare; dacă e ultima, terminăm jocul
-    current++;
+    if (gameState === "allDone") {
+      testIndex = 0;
+      qIndex = 0;
+      scoreTest = 0;
+      scoreTotal = 0;
+      loadQuestion();
+      return;
+    }
 
-    if (current >= questions.length) {
-      endGame();
+    // playing:
+    qIndex++;
+    if (qIndex >= 10) {
+      finishTest();
     } else {
       loadQuestion();
     }
