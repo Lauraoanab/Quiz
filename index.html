@@ -170,6 +170,31 @@
     overflow-y: auto;
   }
 }
+
+  /* Top bar: stânga (Test/Întrebare), centru (Teste), dreapta (Scor test) */
+.topbar{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.meta-left, .meta-right{
+  font-size: 14px;
+  opacity: 0.95;
+  white-space: pre-line; /* permite \n din JS */
+}
+
+.meta-right{
+  text-align: right;
+}
+
+.tests-btn{
+  width: auto;          /* nu full width */
+  padding: 10px 14px;   /* puțin mai mic */
+  margin: 0;            /* fără spacing extra */
+}  
   </style>
 </head>
 
@@ -196,8 +221,9 @@
   <div class="modal">
     <h2>Alege testul</h2>
     <p style="margin-bottom:10px;">
-      Deblochezi următorul test dacă ai <b>minim 7 răspunsuri corecte</b> în testul anterior.
-    </p>
+  Deblochezi următorul test dacă ai <b>minim 7 răspunsuri corecte</b> în testul anterior.
+</p>
+    <p id="totalScoreBanner" style="margin:0 0 10px; font-weight:800;"></p>
     <div class="grid" id="testsGrid"></div>
     <div class="row" style="margin-top:12px;">
       <button class="main-btn" onclick="confirmChangeMode()">Schimbă modul</button>
@@ -207,10 +233,13 @@
 </div>
 
 <div class="card">
-  <div class="meta">
-    <div id="progress"></div>
-    <div id="score"></div>
-  </div>
+<div class="topbar">
+  <div id="progress" class="meta-left"></div>
+
+  <button class="main-btn tests-btn" onclick="openTests()">📚 Teste</button>
+
+  <div id="score" class="meta-right"></div>
+</div>
 
   <div class="question" id="question"></div>
 
@@ -228,9 +257,8 @@
   <div id="badge" class="badge"></div>
 
   <div class="row">
-    <button class="main-btn" onclick="openTests()">📚 Teste</button>
-    <button class="main-btn disabled" id="nextBtn" onclick="nextStep()">Următoarea întrebare</button>
-  </div>
+  <button class="main-btn disabled" id="nextBtn" onclick="nextStep()">Următoarea întrebare</button>
+</div>
 </div>
 
 <script>
@@ -704,9 +732,15 @@ function isCorrectAnswer(userAnswer, correct){
   }
 
   function openTests(){
-    renderTestsGrid();
-    showOverlay("overlayTests", true);
+  renderTestsGrid();
+
+  const banner = document.getElementById("totalScoreBanner");
+  if (banner) {
+    banner.innerText = `Scor total: ${scoreTotal}/${activeQuestions.length}`;
   }
+  showOverlay("overlayTests", true);
+  }
+
   function closeTests(){
     showOverlay("overlayTests", false);
   }
@@ -728,19 +762,24 @@ function isCorrectAnswer(userAnswer, correct){
   }
 
   function updateMeta(){
-    const progressEl = document.getElementById("progress");
-    const scoreEl = document.getElementById("score");
+  const progressEl = document.getElementById("progress");
+  const scoreEl = document.getElementById("score");
 
-    if(gameState === "playing"){
-      progressEl.innerText = `Test ${testIndex+1}/${totalTests()} • Întrebarea ${qIndex+1}/${QUESTIONS_PER_TEST}`;
-    } else if(gameState === "testDone"){
-      progressEl.innerText = `Test ${testIndex+1}/${totalTests()} terminat`;
-    } else {
-      progressEl.innerText = `Toate testele terminate`;
-    }
+  // câte întrebări are testul curent (ultimul poate avea mai puține)
+  const remaining = activeQuestions.length - testIndex * QUESTIONS_PER_TEST;
+  const totalInThisTest = Math.min(QUESTIONS_PER_TEST, remaining);
 
-    scoreEl.innerText = `Scor test: ${scoreTest}/${QUESTIONS_PER_TEST} • Total: ${scoreTotal}/${activeQuestions.length}`;
+  if(gameState === "playing"){
+    progressEl.innerText = `Test ${testIndex + 1}\nÎntrebare ${qIndex + 1}/${totalInThisTest}`;
+  } else if(gameState === "testDone"){
+    progressEl.innerText = `Test ${testIndex + 1}\nFinalizat`;
+  } else {
+    progressEl.innerText = `Toate testele\nFinalizate`;
   }
+
+  // dreapta sus: doar scorul testului
+  scoreEl.innerText = `Scor test: ${scoreTest}/${QUESTIONS_PER_TEST}`;
+}
 
   function buildAnswers(){
     const answersDiv = document.getElementById("answers");
