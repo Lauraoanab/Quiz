@@ -15,27 +15,32 @@
       text-align: center;
     }
 
-    h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
+    h1 { font-size: 28px; margin-bottom: 10px; }
 
     .card {
       background: rgba(255,255,255,0.15);
       border-radius: 16px;
       padding: 20px;
-      max-width: 500px;
+      max-width: 520px;
       margin: auto;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+
     .question {
       font-size: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     input {
-      width: 90%;
+      width: 92%;
       padding: 12px;
       border-radius: 10px;
       border: none;
@@ -48,11 +53,38 @@
       border-radius: 12px;
       border: none;
       font-size: 16px;
-      margin: 6px;
+      margin: 6px 0;
       cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    /* butoane principale */
+    .main-btn {
       background: #ffd166;
       color: #333;
-      font-weight: bold;
+    }
+
+    /* variante de răspuns – GALBEN implicit */
+    .answer-btn {
+      background: #ffd166;
+      color: #333;
+    }
+
+    /* feedback */
+    .correct {
+      background: #06d6a0 !important;
+      color: #003 !important;
+    }
+
+    .wrong {
+      background: #ef476f !important;
+      color: white !important;
+    }
+
+    .disabled {
+      pointer-events: none;
+      opacity: 0.7;
     }
 
     .answers {
@@ -60,139 +92,189 @@
       margin-top: 10px;
     }
 
-    .answers button {
-      display: block;
-      width: 100%;
-      margin: 6px 0;
-      background: #06d6a0;
-      color: #003;
-    }
-
     .result {
-      margin-top: 15px;
+      margin-top: 14px;
       font-size: 18px;
       font-weight: bold;
+    }
+
+    .small {
+      font-size: 12px;
+      opacity: 0.9;
     }
   </style>
 </head>
 
 <body>
-
   <h1>🐘 Afla ce nu stii!</h1>
 
   <div class="card">
+    <div class="meta">
+      <div id="progress"></div>
+      <div id="score"></div>
+    </div>
+
     <div class="question" id="question"></div>
 
     <input type="text" id="textAnswer" placeholder="Scrie răspunsul tău..." />
 
-    <br/>
-
-    <button onclick="checkTextAnswer()">Verifică răspunsul</button>
-    <button onclick="toggleAnswers()">Afișează variantele de răspuns</button>
+    <button class="main-btn" onclick="checkTextAnswer()">Verifică răspunsul</button>
+    <button class="main-btn" onclick="toggleAnswers()">Afișează variantele de răspuns</button>
 
     <div class="answers" id="answers"></div>
 
     <div class="result" id="result"></div>
+    <div class="small" id="hint"></div>
 
-    <button onclick="nextQuestion()">Următoarea întrebare</button>
+    <button class="main-btn" id="nextBtn" onclick="nextQuestion()">Următoarea întrebare</button>
   </div>
+
 <script>
+  // ✅ 10 întrebări (nu se repetă; jocul se oprește la final)
   const questions = [
-    {
-      q: "Care este cea mai mare planetă din Sistemul Solar?",
-      correct: "Jupiter",
-      options: ["Marte", "Jupiter", "Saturn", "Neptun"]
-    },
-    {
-      q: "În ce an a ajuns omul pe Lună?",
-      correct: "1969",
-      options: ["1959", "1965", "1969", "1972"]
-    },
-    {
-      q: "Care este capitala Japoniei?",
-      correct: "Tokyo",
-      options: ["Kyoto", "Seul", "Tokyo", "Osaka"]
-    },
-    {
-      q: "Cine a pictat Mona Lisa?",
-      correct: "Leonardo da Vinci",
-      options: ["Michelangelo", "Van Gogh", "Leonardo da Vinci", "Raphael"]
-    },
-    {
-      q: "Care este cel mai mare ocean?",
-      correct: "Pacific",
-      options: ["Atlantic", "Indian", "Arctic", "Pacific"]
-    },
-    {
-      q: "Ce limbaj se folosește pentru pagini web?",
-      correct: "HTML",
-      options: ["Python", "HTML", "C++", "Java"]
-    },
-    {
-      q: "Care este cel mai înalt munte din lume?",
-      correct: "Everest",
-      options: ["K2", "Everest", "Mont Blanc", "Kilimanjaro"]
-    },
-    {
-      q: "Câte continente există?",
-      correct: "7",
-      options: ["5", "6", "7", "8"]
-    },
-    {
-      q: "Ce animal este cel mai rapid pe uscat?",
-      correct: "Ghepard",
-      options: ["Leu", "Cal", "Ghepard", "Antilopă"]
-    },
-    {
-      q: "Care este formula chimică a apei?",
-      correct: "H2O",
-      options: ["CO2", "O2", "H2O", "NaCl"]
-    }
+    { q:"Care este cea mai mare planetă din Sistemul Solar?", correct:"Jupiter", options:["Marte","Jupiter","Saturn","Neptun"] },
+    { q:"În ce an a ajuns omul pe Lună?", correct:"1969", options:["1959","1965","1969","1972"] },
+    { q:"Care este capitala Japoniei?", correct:"Tokyo", options:["Kyoto","Seul","Tokyo","Osaka"] },
+    { q:"Cine a pictat Mona Lisa?", correct:"Leonardo da Vinci", options:["Michelangelo","Van Gogh","Leonardo da Vinci","Raphael"] },
+    { q:"Care este cel mai mare ocean?", correct:"Pacific", options:["Atlantic","Indian","Arctic","Pacific"] },
+    { q:"Câte continente există?", correct:"7", options:["5","6","7","8"] },
+    { q:"Care este cel mai înalt munte din lume?", correct:"Everest", options:["K2","Everest","Mont Blanc","Kilimanjaro"] },
+    { q:"Ce țară are forma de „cizmă” pe hartă?", correct:"Italia", options:["Spania","Italia","Grecia","Portugalia"] },
+    { q:"Ce gaz este cel mai abundent în atmosfera Pământului?", correct:"Azot", options:["Oxigen","Dioxid de carbon","Azot","Hidrogen"] },
+    { q:"Care este formula chimică a apei?", correct:"H2O", options:["CO2","O2","H2O","NaCl"] }
   ];
-</script>
 
   let current = 0;
+  let score = 0;
+  let answered = false;
+  let gameOver = false;
 
-  function loadQuestion() {
-    document.getElementById("question").innerText = questions[current].q;
-    document.getElementById("textAnswer").value = "";
-    document.getElementById("result").innerText = "";
-    document.getElementById("answers").style.display = "none";
-    document.getElementById("answers").innerHTML = "";
+  function updateMeta() {
+    document.getElementById("progress").innerText =
+      gameOver ? `Final` : `Întrebarea ${current + 1}/${questions.length}`;
+    document.getElementById("score").innerText = `Scor: ${score}`;
+  }
+
+  function normalize(s) {
+    return (s || "").toLowerCase().trim()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function toggleAnswers() {
+    if (gameOver) return;
+    document.getElementById("answers").style.display = "block";
+  }
+
+  function disableAllAnswers() {
+    document.querySelectorAll(".answer-btn").forEach(b => b.classList.add("disabled"));
+  }
+
+  function setMainControlsDisabled(disabled) {
+    document.getElementById("textAnswer").disabled = disabled;
+    // blocăm butoanele principale doar prin pointer-events/opacity ca să arate bine
+    document.querySelectorAll(".main-btn").forEach(btn => {
+      // nextBtn rămâne activ
+      if (btn.id !== "nextBtn") {
+        btn.classList.toggle("disabled", disabled);
+      }
+    });
+  }
+
+  function buildAnswerButtons() {
+    const answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
+    answersDiv.style.display = "none";
 
     questions[current].options.forEach(opt => {
       const btn = document.createElement("button");
       btn.innerText = opt;
-      btn.onclick = () => checkOption(opt);
-      document.getElementById("answers").appendChild(btn);
+      btn.className = "answer-btn";
+      btn.onclick = () => checkOption(btn, opt);
+      answersDiv.appendChild(btn);
     });
   }
 
-  function toggleAnswers() {
-    const div = document.getElementById("answers");
-    div.style.display = div.style.display === "none" ? "block" : "none";
+  function loadQuestion() {
+    gameOver = false;
+    answered = false;
+
+    document.getElementById("question").innerText = questions[current].q;
+    document.getElementById("textAnswer").value = "";
+    document.getElementById("result").innerText = "";
+    document.getElementById("hint").innerText = "";
+
+    buildAnswerButtons();
+    setMainControlsDisabled(false);
+    updateMeta();
+
+    document.getElementById("nextBtn").innerText = "Următoarea întrebare";
+  }
+
+  function showResult(isCorrect, chosenButton = null) {
+    if (answered) return;
+    answered = true;
+
+    if (isCorrect) {
+      score++;
+      document.getElementById("result").innerText = "✅ Corect!";
+      if (chosenButton) chosenButton.classList.add("correct");
+    } else {
+      document.getElementById("result").innerText = "❌ Greșit!";
+      document.getElementById("hint").innerText = "Răspuns corect: " + questions[current].correct;
+      if (chosenButton) chosenButton.classList.add("wrong");
+    }
+
+    disableAllAnswers();
+    setMainControlsDisabled(true);
+    updateMeta();
+  }
+
+  function checkOption(button, option) {
+    const correct = normalize(questions[current].correct);
+    const chosen = normalize(option);
+    showResult(chosen === correct, button);
   }
 
   function checkTextAnswer() {
-    const answer = document.getElementById("textAnswer").value.trim().toLowerCase();
-    const correct = questions[current].correct.toLowerCase();
-    showResult(answer === correct);
+    const answer = normalize(document.getElementById("textAnswer").value);
+    const correct = normalize(questions[current].correct);
+    showResult(answer === correct, null);
   }
 
-  function checkOption(option) {
-    showResult(option === questions[current].correct);
-  }
+  function endGame() {
+    gameOver = true;
+    document.getElementById("question").innerText = "🎉 Joc terminat!";
+    document.getElementById("result").innerText = `Scor final: ${score}/${questions.length}`;
+    document.getElementById("hint").innerText = "Apasă „Repornește jocul” ca să joci din nou.";
 
-  function showResult(isCorrect) {
-    document.getElementById("result").innerText =
-      isCorrect ? "✅ Corect!" : "❌ Greșit!";
+    document.getElementById("answers").style.display = "none";
+    document.getElementById("answers").innerHTML = "";
+    setMainControlsDisabled(true);
+
+    document.getElementById("nextBtn").innerText = "Repornește jocul";
+    updateMeta();
   }
 
   function nextQuestion() {
-    current = (current + 1) % questions.length;
-    loadQuestion();
+    // restart dacă jocul s-a terminat
+    if (gameOver) {
+      current = 0;
+      score = 0;
+      loadQuestion();
+      return;
+    }
+
+    // trecem la următoarea întrebare; dacă e ultima, terminăm jocul
+    current++;
+
+    if (current >= questions.length) {
+      endGame();
+    } else {
+      loadQuestion();
+    }
   }
 
+  // Start
   loadQuestion();
 </script>
 
