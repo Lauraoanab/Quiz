@@ -216,17 +216,56 @@
     const d=dearticulate(s);
     return new Set([n,d].filter(Boolean));
   }
-  function isCorrectAnswer(userAnswer, correct){
-    const userVars=answerVariants(userAnswer);
-    const correctList=Array.isArray(correct)?correct:[correct];
-    for(const c of correctList){
-      const corrVars=answerVariants(c);
-      for(const uv of userVars){
-        if(corrVars.has(uv)) return true;
-      }
-    }
-    return false;
+function tokens(s){
+  return normalize(s).split(" ").filter(Boolean);
+}
+
+function isPartialMatch(user, correct){
+  const u = normalize(user);
+  const c = normalize(correct);
+
+  if (!u || !c) return false;
+
+  // minim 4 caractere ca să evităm potriviri prea “slabe”
+  if (u.length < 4) return false;
+
+  const cTokens = tokens(c);
+  const uTokens = tokens(u);
+
+  // dacă user a scris un singur cuvânt (ex: "bering")
+  // îl acceptăm dacă apare ca token întreg în răspunsul corect
+  if (uTokens.length === 1) {
+    return cTokens.includes(uTokens[0]);
   }
+
+  // dacă user a scris mai multe cuvinte,
+  // acceptăm dacă toate apar în răspunsul corect (ca tokens)
+  return uTokens.every(t => cTokens.includes(t));
+}
+
+function isCorrectAnswer(userAnswer, correct){
+  const correctList = Array.isArray(correct) ? correct : [correct];
+
+  // 1) exact / de-articulat (Nil/Nilul etc.)
+  const userVars = answerVariants(userAnswer);
+
+  for (const c of correctList) {
+    const corrVars = answerVariants(c);
+
+    // exact match pe variante
+    for (const uv of userVars) {
+      if (corrVars.has(uv)) return true;
+    }
+
+    // 2) partial match (Bering vs Strâmtoarea Bering)
+    // verificăm atât forma originală cât și de-articulată
+    for (const uv of userVars) {
+      if (isPartialMatch(uv, c)) return true;
+    }
+  }
+
+  return false;
+}
 
   function showOverlay(id, show){
     document.getElementById(id).style.display = show ? "flex" : "none";
@@ -822,7 +861,11 @@
 
   // ===== STARTUP =====
   if(loadProgress()){
-    showOverlay("overlayMode", false);
+  showOverlay("overlayMode", false);
+  // ...
+} else {
+  showOverlay("overlayMode", true);
+}
 
     // dacă ești în mijlocul jocului, intri direct acolo; altfel la test list
     if(gameState === "playing"){
