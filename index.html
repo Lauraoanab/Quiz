@@ -5,261 +5,252 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Afla ce nu stii!</title>
 
-  <!-- iPhone icon (pentru GitHub Pages: path relativ, fără / în față) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.PNG">
   <link rel="icon" href="apple-touch-icon.PNG">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Afla ce nu stii!">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      color:#fff;margin:0;padding:20px;text-align:center;
     }
-    h1 { font-size: 28px; margin: 10px 0 14px; }
+    h1{font-size:28px;margin:10px 0 14px;}
 
-    .card {
-      background: rgba(255,255,255,0.15);
-      border-radius: 16px;
-      padding: 18px;
-      max-width: 560px;
-      margin: auto;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    .card{
+      background:rgba(255,255,255,0.15);
+      border-radius:16px;
+      padding:18px;
+      max-width:640px;
+      margin:auto;
+      box-shadow:0 10px 30px rgba(0,0,0,0.2);
     }
 
-    .meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 14px;
-      margin-bottom: 12px;
-      opacity: 0.95;
+    .meta{
+      display:flex;justify-content:space-between;gap:10px;
+      font-size:14px;margin-bottom:12px;opacity:0.95;
     }
 
-    .question { font-size: 20px; margin: 10px 0 14px; }
+    .question{font-size:20px;margin:10px 0 14px;}
+    input{
+      width:92%;padding:12px;border-radius:10px;border:none;
+      font-size:16px;margin-bottom:10px;
+    }
+    button{
+      padding:12px 18px;border-radius:12px;border:none;font-size:16px;
+      margin:6px 0;cursor:pointer;font-weight:800;width:100%;
+    }
+    .main-btn{background:#ffd166;color:#333;}
+    .answer-btn{background:#ffd166;color:#333;}
+    .correct{background:#06d6a0 !important;color:#003 !important;}
+    .wrong{background:#ef476f !important;color:#fff !important;}
 
-    input {
-      width: 92%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      margin-bottom: 10px;
+    .answers{display:none;margin-top:8px;}
+    .result{margin-top:12px;font-size:18px;font-weight:900;}
+    .hint{margin-top:6px;font-size:14px;opacity:0.92;}
+
+    .disabled{pointer-events:none;opacity:0.65;}
+    .row{display:grid;gap:8px;margin-top:6px;}
+
+    .badge{
+      margin-top:12px;padding:10px;border-radius:12px;font-weight:800;
+      background:rgba(6,214,160,0.95);color:#003;display:none;
     }
 
-    button {
-      padding: 12px 18px;
-      border-radius: 12px;
-      border: none;
-      font-size: 16px;
-      margin: 6px 0;
-      cursor: pointer;
-      font-weight: 800;
-      width: 100%;
+    /* Overlay screens */
+    .overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,0.55);
+      display:none;align-items:center;justify-content:center;
+      padding:20px;z-index:9999;
+    }
+    .modal{
+      width:100%;max-width:640px;border-radius:16px;
+      background:rgba(20,20,30,0.95);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+      padding:18px;text-align:left;
+    }
+    .modal h2{margin:0 0 8px;font-size:20px;}
+    .modal p{margin:6px 0 12px;opacity:0.9;}
+
+    .pill{
+      display:inline-block;padding:6px 10px;border-radius:999px;
+      background:rgba(255,255,255,0.12);
+      margin-right:6px;font-size:12px;opacity:0.95;
     }
 
-    .main-btn { background: #ffd166; color: #333; }
-
-    /* opțiuni: GALBEN implicit */
-    .answer-btn { background: #ffd166; color: #333; }
-
-    /* feedback */
-    .correct { background: #06d6a0 !important; color: #003 !important; }
-    .wrong   { background: #ef476f !important; color: #fff !important; }
-
-    .answers { display: none; margin-top: 8px; }
-
-    .result { margin-top: 12px; font-size: 18px; font-weight: 900; }
-    .hint   { margin-top: 6px;  font-size: 14px; opacity: 0.92; }
-
-    .disabled {
-      pointer-events: none;
-      opacity: 0.65;
+    /* Test picker grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:10px;
     }
-
-    .row { display: grid; gap: 8px; margin-top: 6px; }
-
-    .badge {
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 12px;
-      font-weight: 800;
-      background: rgba(6, 214, 160, 0.95);
-      color: #003;
-      display: none;
+    @media (max-width:520px){
+      .grid{grid-template-columns: repeat(4, 1fr);}
     }
-
-    /* MODAL START (Mode Picker) */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 9999;
+    @media (max-width:420px){
+      .grid{grid-template-columns: repeat(3, 1fr);}
     }
-    .modal {
-      width: 100%;
-      max-width: 560px;
-      border-radius: 16px;
-      background: rgba(20,20,30,0.95);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-      padding: 18px;
-      text-align: left;
+    .test-tile{
+      background:rgba(255,255,255,0.12);
+      border-radius:14px;
+      padding:10px 8px;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+      box-shadow:0 6px 16px rgba(0,0,0,0.15);
+      border:1px solid rgba(255,255,255,0.14);
     }
-    .modal h2 { margin: 0 0 8px; font-size: 20px; }
-    .modal p { margin: 6px 0 12px; opacity: 0.9; }
-    .pill {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.12);
-      margin-right: 6px;
-      font-size: 12px;
-      opacity: 0.95;
+    .test-tile.locked{opacity:0.55; cursor:not-allowed;}
+    .test-num{font-weight:900; font-size:14px; margin-top:4px;}
+    .test-icon{font-size:22px; line-height:1;}
+    .test-sub{font-size:12px; opacity:0.9; margin-top:4px;}
+    .test-score{
+      margin-top:6px;
+      font-size:12px;
+      background:rgba(255,255,255,0.12);
+      border-radius:999px;
+      padding:4px 8px;
+      display:inline-block;
+      opacity:0.95;
     }
   </style>
 </head>
 
 <body>
-  <h1>🐘 Afla ce nu stii!</h1>
+<h1>🐘 Afla ce nu stii!</h1>
 
-  <!-- Mode Picker -->
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <h2>Alege modul de joc</h2>
-      <p>
-        <span class="pill">Teste random</span>
-        <span class="pill">Fără repetări</span>
-        <span class="pill">Progres salvat</span>
-      </p>
+<!-- Mode Picker -->
+<div class="overlay" id="overlayMode">
+  <div class="modal">
+    <h2>Alege modul de joc</h2>
+    <p>
+      <span class="pill">Teste random</span>
+      <span class="pill">Fără repetări</span>
+      <span class="pill">Progres salvat</span>
+      <span class="pill">Deblocare cu prag 7/10</span>
+    </p>
+    <button class="main-btn" onclick="startNewGame('mix')">Mix (toate întrebările)</button>
+    <button class="main-btn" onclick="startNewGame('hard')">Hard only (doar dificile)</button>
+  </div>
+</div>
 
-      <button class="main-btn" onclick="startNewGame('mix')">
-        Mix (toate întrebările)
-      </button>
-      <button class="main-btn" onclick="startNewGame('hard')">
-        Hard only (doar întrebări dificile)
-      </button>
-
-      <p style="margin-top:10px; font-size:13px; opacity:0.85;">
-        Poți schimba modul oricând: finalizează jocul sau apasă „Reia de la început” la final.
-      </p>
+<!-- Test Picker -->
+<div class="overlay" id="overlayTests">
+  <div class="modal">
+    <h2>Alege testul</h2>
+    <p style="margin-bottom:10px;">
+      Deblochezi următorul test dacă ai <b>minim 7 răspunsuri corecte</b> în testul anterior.
+    </p>
+    <div class="grid" id="testsGrid"></div>
+    <div class="row" style="margin-top:12px;">
+      <button class="main-btn" onclick="confirmChangeMode()">Schimbă modul</button>
+      <button class="main-btn" onclick="closeTests()">Înapoi</button>
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <div class="meta">
-      <div id="progress"></div>
-      <div id="score"></div>
-    </div>
+<div class="card">
+  <div class="meta">
+    <div id="progress"></div>
+    <div id="score"></div>
+  </div>
 
-    <div class="question" id="question"></div>
+  <div class="question" id="question"></div>
 
-    <input type="text" id="textAnswer" placeholder="Scrie răspunsul tău..." />
+  <input type="text" id="textAnswer" placeholder="Scrie răspunsul tău..." />
 
-    <div class="row">
-      <button class="main-btn" id="checkBtn" onclick="checkTextAnswer()">Verifică răspunsul</button>
-      <button class="main-btn" id="toggleBtn" onclick="toggleAnswers()">Afișează variantele de răspuns</button>
-    </div>
+  <div class="row">
+    <button class="main-btn" id="checkBtn" onclick="checkTextAnswer()">Verifică răspunsul</button>
+    <button class="main-btn" id="toggleBtn" onclick="toggleAnswers()">Afișează variantele de răspuns</button>
+  </div>
 
-    <div class="answers" id="answers"></div>
+  <div class="answers" id="answers"></div>
 
-    <div class="result" id="result"></div>
-    <div class="hint" id="hint"></div>
-    <div id="badge" class="badge"></div>
+  <div class="result" id="result"></div>
+  <div class="hint" id="hint"></div>
+  <div id="badge" class="badge"></div>
 
+  <div class="row">
+    <button class="main-btn" onclick="openTests()">📚 Teste</button>
     <button class="main-btn disabled" id="nextBtn" onclick="nextStep()">Următoarea întrebare</button>
   </div>
+</div>
 
 <script>
-  // =========================
-  // CONFIG
-  // =========================
+  // ===== CONFIG =====
   const QUESTIONS_PER_TEST = 10;
-  const STORAGE_KEY = "afla_ce_nu_stii_v3";
+  const UNLOCK_THRESHOLD = 7;
+  const STORAGE_KEY = "afla_ce_nu_stii_unlocks_v1";
 
-  // =========================
-  // HELPERS
-  // =========================
-  function shuffleArray(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+  // ===== HELPERS =====
+  function shuffleArray(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
     }
     return arr;
   }
-
-  function normalize(s) {
-    return (s || "")
-      .trim()
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, " ");
+  function normalize(s){
+    return (s||"")
+      .trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^\w\s-]/g,"")
+      .replace(/\s+/g," ");
   }
-
-  // De-articulare simplă (pt. un cuvânt): Nilul -> nil, dolarul -> dolar
-  function dearticulate(word) {
-    const w = normalize(word);
-    if (!w || w.includes(" ")) return w;
-    const endings = ["ului","elor","ilor","lor","ile","ii","ul","le","ea","a"];
-    for (const end of endings) {
-      if (w.length > end.length + 1 && w.endsWith(end)) {
-        return w.slice(0, -end.length);
+  function dearticulate(word){
+    const w=normalize(word);
+    if(!w || w.includes(" ")) return w;
+    const endings=["ului","elor","ilor","lor","ile","ii","ul","le","ea","a"];
+    for(const end of endings){
+      if(w.length>end.length+1 && w.endsWith(end)){
+        return w.slice(0,-end.length);
       }
     }
     return w;
   }
-
-  function answerVariants(s) {
-    const n = normalize(s);
-    const d = dearticulate(s);
-    return new Set([n, d].filter(Boolean));
+  function answerVariants(s){
+    const n=normalize(s);
+    const d=dearticulate(s);
+    return new Set([n,d].filter(Boolean));
   }
-
-  function isCorrectAnswer(userAnswer, correct) {
-    const userVars = answerVariants(userAnswer);
-    const correctList = Array.isArray(correct) ? correct : [correct];
-
-    for (const c of correctList) {
-      const corrVars = answerVariants(c);
-      for (const uv of userVars) {
-        if (corrVars.has(uv)) return true;
+  function isCorrectAnswer(userAnswer, correct){
+    const userVars=answerVariants(userAnswer);
+    const correctList=Array.isArray(correct)?correct:[correct];
+    for(const c of correctList){
+      const corrVars=answerVariants(c);
+      for(const uv of userVars){
+        if(corrVars.has(uv)) return true;
       }
     }
     return false;
   }
 
-  function setNextEnabled(enabled) {
-    const b = document.getElementById("nextBtn");
-    b.classList.toggle("disabled", !enabled);
+  function showOverlay(id, show){
+    document.getElementById(id).style.display = show ? "flex" : "none";
   }
 
-  function setControlsEnabled(enabled) {
+  function setNextEnabled(enabled){
+    document.getElementById("nextBtn").classList.toggle("disabled", !enabled);
+  }
+  function setControlsEnabled(enabled){
     document.getElementById("textAnswer").disabled = !enabled;
     document.getElementById("checkBtn").classList.toggle("disabled", !enabled);
     document.getElementById("toggleBtn").classList.toggle("disabled", !enabled);
     document.getElementById("answers").classList.toggle("disabled", !enabled);
   }
 
-  function showOverlay(show) {
-    document.getElementById("overlay").style.display = show ? "flex" : "none";
-  }
-
-  // =========================
+  // ===== QUESTION BANK (minimal demo)
+  // IMPORTANT: păstrează aici listele tale complete EASY_QUESTIONS și HARD_QUESTIONS (100/100).
+  const EASY_QUESTIONS = [
+    // =========================
   // QUESTIONS BANK (200)
   // NOTE: păstrez structura: {q, c, o}
   // =========================
 
   // ---- 100 (basic/medium) ----
-  const EASY_QUESTIONS = [
+  
     {q:"Care este capitala Franței?", c:"Paris", o:["Paris","Lyon","Marseille","Nisa"]},
     {q:"Câte continente există pe Pământ (modelul uzual)?", c:"7", o:["5","6","7","8"]},
     {q:"Care este cea mai mare planetă din Sistemul Solar?", c:"Jupiter", o:["Marte","Jupiter","Saturn","Neptun"]},
@@ -492,61 +483,60 @@
 
   ];
 
-  // IMPORTANT:
-  // Pentru ca modul "Hard only" să fie chiar 100 întrebări, lipește toate cele 100 hard aici.
-  // (Acum sunt doar ~20 în exemplu de mai sus. Restul le ai deja din mesajele anterioare.)
-
-  // =========================
-  // STATE
-  // =========================
-  let mode = null;           // 'mix' | 'hard'
-  let activeQuestions = [];  // în funcție de mod
-  let order = [];            // indici amestecați 0..activeQuestions.length-1
-  let currentOptions = null; // ordinea variantelor pentru întrebarea curentă (salvată)
+  // ===== STATE =====
+  let mode = null;                // 'mix' | 'hard'
+  let activeQuestions = [];       // după mod
+  let order = [];                 // indici amestecați (fără repetări)
+  let optionsMap = {};            // key "t-q" -> array opțiuni amestecate (persist)
   let answered = false;
-  let gameState = "playing"; // playing | testDone | allDone
+  let gameState = "playing";      // playing | testDone | allDone
   let testIndex = 0;
   let qIndex = 0;
   let scoreTest = 0;
   let scoreTotal = 0;
 
-  function totalTests() {
+  // lock/unlock + scores per test
+  // unlockedUpTo = ultimul test deblocat (index 0-based). implicit 0 (doar primul)
+  let unlockedUpTo = 0;
+  let testScores = []; // scor pe test (0..10), -1 = nefăcut
+
+  function totalTests(){
     return Math.ceil(activeQuestions.length / QUESTIONS_PER_TEST);
   }
 
-  function saveProgress() {
+  // ===== STORAGE =====
+  function saveProgress(){
     const data = {
       mode,
       activeLen: activeQuestions.length,
       order,
-      currentOptions,
+      optionsMap,
       answered,
       gameState,
-      testIndex,
-      qIndex,
-      scoreTest,
-      scoreTotal
+      testIndex, qIndex,
+      scoreTest, scoreTotal,
+      unlockedUpTo,
+      testScores
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
-  function loadProgress() {
+  function loadProgress(){
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-
-    try {
+    if(!raw) return false;
+    try{
       const data = JSON.parse(raw);
-      if (!data.mode) return false;
+      if(!data.mode) return false;
 
       mode = data.mode;
       activeQuestions = (mode === "hard")
         ? HARD_QUESTIONS.slice()
         : EASY_QUESTIONS.concat(HARD_QUESTIONS);
 
-      if (!Array.isArray(data.order) || data.order.length !== activeQuestions.length) return false;
+      if(!Array.isArray(data.order) || data.order.length !== activeQuestions.length) return false;
 
       order = data.order;
-      currentOptions = Array.isArray(data.currentOptions) ? data.currentOptions : null;
+      optionsMap = data.optionsMap || {};
       answered = !!data.answered;
       gameState = data.gameState || "playing";
       testIndex = data.testIndex ?? 0;
@@ -554,47 +544,103 @@
       scoreTest = data.scoreTest ?? 0;
       scoreTotal = data.scoreTotal ?? 0;
 
+      unlockedUpTo = data.unlockedUpTo ?? 0;
+      testScores = Array.isArray(data.testScores) ? data.testScores : Array(totalTests()).fill(-1);
+
+      // asigură lungimea
+      if(testScores.length !== totalTests()){
+        testScores = Array(totalTests()).fill(-1);
+      }
+
       return true;
     } catch {
       return false;
     }
   }
 
-  function resetGame(newMode) {
+  function resetGame(newMode){
     mode = newMode;
     activeQuestions = (mode === "hard")
       ? HARD_QUESTIONS.slice()
       : EASY_QUESTIONS.concat(HARD_QUESTIONS);
 
     order = shuffleArray([...Array(activeQuestions.length).keys()]);
-    currentOptions = null;
+    optionsMap = {};
     answered = false;
     gameState = "playing";
     testIndex = 0;
     qIndex = 0;
     scoreTest = 0;
     scoreTotal = 0;
+
+    unlockedUpTo = 0;
+    testScores = Array(totalTests()).fill(-1);
+
     saveProgress();
   }
 
-  function getQuestion(testI, qI) {
-    const globalPos = testI * QUESTIONS_PER_TEST + qI;
+  // ===== TEST PICKER UI =====
+  function renderTestsGrid(){
+    const grid = document.getElementById("testsGrid");
+    grid.innerHTML = "";
+
+    for(let i=0; i<totalTests(); i++){
+      const locked = i > unlockedUpTo;
+      const tile = document.createElement("div");
+      tile.className = "test-tile" + (locked ? " locked" : "");
+
+      const icon = locked ? "🔒" : "🧠";
+      const score = testScores[i];
+
+      tile.innerHTML = `
+        <div class="test-icon">${icon}</div>
+        <div class="test-num">Test ${i+1}</div>
+        <div class="test-sub">${locked ? "Blocat" : "Disponibil"}</div>
+        <div class="test-score">${score >= 0 ? `Scor: ${score}/10` : "Nefăcut"}</div>
+      `;
+
+      tile.onclick = () => {
+        if(locked) return;
+        startTest(i);
+        closeTests();
+      };
+
+      grid.appendChild(tile);
+    }
+  }
+
+  function openTests(){
+    renderTestsGrid();
+    showOverlay("overlayTests", true);
+  }
+  function closeTests(){
+    showOverlay("overlayTests", false);
+  }
+  function confirmChangeMode(){
+    // schimbă modul -> începe joc nou, alege din nou
+    localStorage.removeItem(STORAGE_KEY);
+    showOverlay("overlayTests", false);
+    showOverlay("overlayMode", true);
+  }
+
+  // ===== GAME LOGIC =====
+  function getQuestion(tI, qI){
+    const globalPos = tI * QUESTIONS_PER_TEST + qI;
     const idx = order[globalPos];
     return activeQuestions[idx];
   }
-
-  function currentQ() {
+  function currentQ(){
     return getQuestion(testIndex, qIndex);
   }
 
-  function updateMeta() {
+  function updateMeta(){
     const progressEl = document.getElementById("progress");
     const scoreEl = document.getElementById("score");
 
-    if (gameState === "playing") {
-      progressEl.innerText = `Test ${testIndex + 1}/${totalTests()} • Întrebarea ${qIndex + 1}/${QUESTIONS_PER_TEST}`;
-    } else if (gameState === "testDone") {
-      progressEl.innerText = `Test ${testIndex + 1}/${totalTests()} terminat`;
+    if(gameState === "playing"){
+      progressEl.innerText = `Test ${testIndex+1}/${totalTests()} • Întrebarea ${qIndex+1}/${QUESTIONS_PER_TEST}`;
+    } else if(gameState === "testDone"){
+      progressEl.innerText = `Test ${testIndex+1}/${totalTests()} terminat`;
     } else {
       progressEl.innerText = `Toate testele terminate`;
     }
@@ -602,19 +648,18 @@
     scoreEl.innerText = `Scor test: ${scoreTest}/${QUESTIONS_PER_TEST} • Total: ${scoreTotal}/${activeQuestions.length}`;
   }
 
-  function buildAnswers() {
+  function buildAnswers(){
     const answersDiv = document.getElementById("answers");
     answersDiv.innerHTML = "";
     answersDiv.style.display = "none";
 
-    // Sugestia 2: amestecă variantele.
-    // Ca să nu se schimbe la refresh, păstrăm currentOptions în storage.
-    if (!currentOptions) {
-      currentOptions = shuffleArray([...currentQ().o]);
+    const key = `${testIndex}-${qIndex}`;
+    if(!Array.isArray(optionsMap[key])){
+      optionsMap[key] = shuffleArray([...currentQ().o]);
       saveProgress();
     }
 
-    currentOptions.forEach(opt => {
+    optionsMap[key].forEach(opt => {
       const btn = document.createElement("button");
       btn.innerText = opt;
       btn.className = "answer-btn";
@@ -623,18 +668,19 @@
     });
   }
 
-  function loadQuestion() {
+  function loadQuestion(){
     answered = false;
     gameState = "playing";
-    currentOptions = null; // reset opțiuni pentru noua întrebare
+
     document.getElementById("badge").style.display = "none";
     document.getElementById("badge").innerText = "";
+
+    document.getElementById("question").innerText = currentQ().q;
+    document.getElementById("textAnswer").value = "";
     document.getElementById("result").innerText = "";
     document.getElementById("hint").innerText = "";
-    document.getElementById("textAnswer").value = "";
-    document.getElementById("question").innerText = currentQ().q;
 
-    // Sugestia 1: Next dezactivat până răspunzi
+    // Next dezactivat până răspunzi
     setNextEnabled(false);
 
     buildAnswers();
@@ -643,144 +689,160 @@
     saveProgress();
   }
 
-  function toggleAnswers() {
-    if (gameState !== "playing") return;
+  function startTest(i){
+    // pornești întotdeauna de la întrebarea 1 a testului
+    testIndex = i;
+    qIndex = 0;
+    scoreTest = 0;
+    document.getElementById("nextBtn").innerText = "Următoarea întrebare";
+    loadQuestion();
+  }
+
+  function toggleAnswers(){
+    if(gameState !== "playing") return;
     document.getElementById("answers").style.display = "block";
   }
 
-  function disableAllAnswers() {
+  function disableAllAnswers(){
     document.querySelectorAll(".answer-btn").forEach(b => b.classList.add("disabled"));
   }
 
-  function showResult(ok, chosenBtn) {
-    if (answered || gameState !== "playing") return;
+  function showResult(ok, chosenBtn){
+    if(answered || gameState !== "playing") return;
     answered = true;
 
-    if (ok) {
+    if(ok){
       scoreTest++;
       scoreTotal++;
       document.getElementById("result").innerText = "✅ Corect!";
-      if (chosenBtn) chosenBtn.classList.add("correct");
+      if(chosenBtn) chosenBtn.classList.add("correct");
     } else {
       document.getElementById("result").innerText = "❌ Greșit!";
       const c = currentQ().c;
       const pretty = Array.isArray(c) ? c[0] : c;
       document.getElementById("hint").innerText = "Răspuns corect: " + pretty;
-      if (chosenBtn) chosenBtn.classList.add("wrong");
+      if(chosenBtn) chosenBtn.classList.add("wrong");
     }
 
     disableAllAnswers();
     setControlsEnabled(false);
 
-    // Sugestia 1: Next devine activ abia acum
+    // Next devine activ
     setNextEnabled(true);
 
     updateMeta();
     saveProgress();
   }
 
-  function checkOption(btn, opt) {
+  function checkOption(btn, opt){
     showResult(isCorrectAnswer(opt, currentQ().c), btn);
   }
 
-  function checkTextAnswer() {
+  function checkTextAnswer(){
     const val = document.getElementById("textAnswer").value;
     showResult(isCorrectAnswer(val, currentQ().c), null);
   }
 
-  function finishTest() {
-    gameState = (testIndex < totalTests() - 1) ? "testDone" : "allDone";
+  function finishTest(){
+    gameState = (testIndex < totalTests()-1) ? "testDone" : "allDone";
+
+    // salvează scor test
+    testScores[testIndex] = scoreTest;
+
+    // Deblocare: dacă scorTest >= 7, deblochează următorul test (dacă există)
+    if(scoreTest >= UNLOCK_THRESHOLD && testIndex + 1 > unlockedUpTo){
+      unlockedUpTo = Math.min(testIndex + 1, totalTests()-1);
+    }
 
     document.getElementById("question").innerText =
       (gameState === "testDone") ? "✅ Test finalizat!" : "🎉 Ai terminat toate testele!";
 
     document.getElementById("result").innerText = `Scor test: ${scoreTest}/${QUESTIONS_PER_TEST}`;
-    document.getElementById("hint").innerText = `Scor total: ${scoreTotal}/${activeQuestions.length}`;
+    document.getElementById("hint").innerText =
+      `Scor total: ${scoreTotal}/${activeQuestions.length} • Deblocare: ${scoreTest >= UNLOCK_THRESHOLD ? "DA ✅" : "NU ❌ (ai nevoie de 7/10)"}`;
 
     const badge = document.getElementById("badge");
     badge.style.display = "block";
-    badge.innerText =
-      (gameState === "testDone")
-        ? `Ai finalizat Testul ${testIndex + 1} din ${totalTests()}`
-        : `Felicitări! Ai finalizat toate testele (${mode === 'hard' ? 'Hard' : 'Mix'})`;
+
+    if(gameState === "testDone"){
+      badge.innerText = scoreTest >= UNLOCK_THRESHOLD
+        ? `Ai deblocat Testul ${Math.min(testIndex+2, totalTests())}!`
+        : `Nu ai deblocat următorul test. (Ai nevoie de minim ${UNLOCK_THRESHOLD}/10)`;
+    } else {
+      badge.innerText = `Felicitări! Ai terminat modul ${mode === "hard" ? "Hard" : "Mix"}!`;
+    }
 
     document.getElementById("answers").style.display = "none";
     document.getElementById("answers").innerHTML = "";
     setControlsEnabled(false);
 
-    // Next trebuie să fie activ aici (pentru next test / restart)
     setNextEnabled(true);
-
     document.getElementById("nextBtn").innerText =
-      (gameState === "testDone") ? "Treci la următorul test" : "Reia de la început";
+      (gameState === "testDone") ? "Înapoi la teste" : "Reia de la început";
 
     updateMeta();
     saveProgress();
   }
 
-  function nextStep() {
-    if (gameState === "testDone") {
-      testIndex++;
-      qIndex = 0;
-      scoreTest = 0;
-      document.getElementById("nextBtn").innerText = "Următoarea întrebare";
-      loadQuestion();
+  function nextStep(){
+    // dacă s-a terminat testul: du-te la lista de teste
+    if(gameState === "testDone"){
+      openTests();
       return;
     }
 
-    if (gameState === "allDone") {
+    // dacă s-a terminat tot: restart -> alege modul
+    if(gameState === "allDone"){
       localStorage.removeItem(STORAGE_KEY);
-      showOverlay(true); // alege modul din nou
+      showOverlay("overlayMode", true);
       return;
     }
 
     // playing: nu permitem să sari peste întrebare
-    if (!answered) return;
+    if(!answered) return;
 
     qIndex++;
     const globalPos = testIndex * QUESTIONS_PER_TEST + qIndex;
 
-    if (qIndex >= QUESTIONS_PER_TEST || globalPos >= activeQuestions.length) {
+    if(qIndex >= QUESTIONS_PER_TEST || globalPos >= activeQuestions.length){
       finishTest();
     } else {
       loadQuestion();
     }
   }
 
-  // =========================
-  // MODE START
-  // =========================
-  function startNewGame(newMode) {
-    showOverlay(false);
+  // ===== START NEW GAME =====
+  function startNewGame(newMode){
+    showOverlay("overlayMode", false);
     resetGame(newMode);
-    document.getElementById("nextBtn").innerText = "Următoarea întrebare";
-    loadQuestion();
+    // după alegerea modului -> arată iconițele testelor
+    openTests();
   }
 
-  // =========================
-  // STARTUP
-  // =========================
-  if (loadProgress()) {
-    showOverlay(false);
-    updateMeta();
+  // ===== STARTUP =====
+  if(loadProgress()){
+    showOverlay("overlayMode", false);
 
-    if (gameState === "playing") {
-      // reafișează întrebarea curentă, păstrând ordinea opțiunilor dacă exista
-      document.getElementById("question").innerText = currentQ().q;
-      document.getElementById("textAnswer").value = "";
+    // dacă ești în mijlocul jocului, intri direct acolo; altfel la test list
+    if(gameState === "playing"){
+      loadQuestion();
+    } else if(gameState === "testDone"){
+      // arată rezultatul testului curent și apoi user apasă "Înapoi la teste"
+      finishTest();
+    } else {
+      // allDone
+      document.getElementById("question").innerText = "🎉 Ai terminat!";
       document.getElementById("result").innerText = "";
       document.getElementById("hint").innerText = "";
-      document.getElementById("badge").style.display = "none";
-
-      buildAnswers();
-      setControlsEnabled(!answered);
-      setNextEnabled(answered); // dacă răspunsese deja înainte de refresh, next rămâne activ
-    } else {
-      finishTest();
+      setControlsEnabled(false);
+      setNextEnabled(true);
+      document.getElementById("nextBtn").innerText = "Reia de la început";
+      updateMeta();
     }
+
+    // poți deschide oricând lista de teste din butonul "📚 Teste"
   } else {
-    // Nicio salvare: cere modul
-    showOverlay(true);
+    showOverlay("overlayMode", true);
   }
 </script>
 
