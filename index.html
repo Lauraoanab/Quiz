@@ -44,7 +44,7 @@
       margin:6px 0;cursor:pointer;font-weight:800;width:100%;
     }
     .main-btn{background:#ffd166;color:#333;}
-    .answer-btn{background:#ffd166;color:#333;}
+    .answer-btn{background:#ffe8a3;color:#333;}
     .correct{background:#06d6a0 !important;color:#003 !important;}
     .wrong{background:#ef476f !important;color:#fff !important;}
 
@@ -195,6 +195,11 @@
   padding: 10px 14px;   /* puțin mai mic */
   margin: 0;            /* fără spacing extra */
 }  
+.badge.clickable{
+  cursor: pointer;
+  text-decoration: underline;
+}
+  
   </style>
 </head>
 
@@ -298,49 +303,131 @@
     const d=dearticulate(s);
     return new Set([n,d].filter(Boolean));
   }
+
 function tokens(s){
   return normalize(s).split(" ").filter(Boolean);
+}
+
+// Cuvinte "generice" care NU trebuie să valideze singure un răspuns
+const GENERIC_TOKENS = new Set([
+  "stramtoarea","stramtoare",
+  "raul","raului","rau","fluviu","fluviul",
+  "munte","muntele","muntii",
+  "mare","marea","ocean","oceanul",
+  "lacul","lac","insula","insula",
+  "oras","orasul","capitala",
+  "tara","tarii","stat","statul",
+  "republica","regatul","imperiul",
+  "curentul","curent",
+  "efectul","efect",
+  "teorema","legea","legile",
+  "tratatul","tratat",
+  "galaxia","galaxie",
+  "planeta","planetei",
+  "vitamina"
+]);
+
+// Edit-distance (Levenshtein) cu oprire rapidă dacă depășește 1
+function editDistanceAtMost1(a, b){
+  a = normalize(a);
+  b = normalize(b);
+  if (a === b) return true;
+
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+
+  // dacă aceeași lungime -> max 1 substituție
+  if (la === lb) {
+    let diff = 0;
+    for (let i = 0; i < la; i++) {
+      if (a[i] !== b[i]) {
+        diff++;
+        if (diff > 1) return false;
+      }
+    }
+    return true; // diff = 1
+  }
+
+  // dacă diferă cu 1 -> max 1 inserție/ștergere
+  const shorter = la < lb ? a : b;
+  const longer  = la < lb ? b : a;
+
+  let i = 0, j = 0;
+  let used = false;
+  while (i < shorter.length && j < longer.length) {
+    if (shorter[i] === longer[j]) {
+      i++; j++;
+    } else {
+      if (used) return false;
+      used = true;
+      j++; // sărim un caracter din longer (inserție/ștergere)
+    }
+  }
+  return true;
+}
+
+// Verifică dacă user a dat un singur cuvânt "specific" din soluție
+function singleTokenMatchesSolution(userToken, correctPhrase){
+  if (!userToken || userToken.length < 4) return false; // evită "a", "de", etc.
+  if (GENERIC_TOKENS.has(userToken)) return false;      // evită "stramtoarea"
+
+  const cTokens = tokens(correctPhrase);
+  // potrivire exactă token
+  if (cTokens.includes(userToken)) return true;
+
+  // potrivire fuzzy (±1 literă) față de ORICE token din soluție
+  return cTokens.some(ct => editDistanceAtMost1(userToken, ct));
 }
 
 function isPartialMatch(user, correct){
   const u = normalize(user);
   const c = normalize(correct);
-
   if (!u || !c) return false;
 
-  // minim 4 caractere ca să evităm potriviri prea “slabe”
-  if (u.length < 4) return false;
-
-  const cTokens = tokens(c);
   const uTokens = tokens(u);
+  const cTokens = tokens(c);
 
-  // dacă user a scris un singur cuvânt (ex: "bering")
-  // îl acceptăm dacă apare ca token întreg în răspunsul corect
+  // 1) dacă user a scris UN SINGUR cuvânt:
+  // acceptăm dacă e un token "specific" din soluție (cu fuzzy ±1 literă)
   if (uTokens.length === 1) {
-    return cTokens.includes(uTokens[0]);
+    return singleTokenMatchesSolution(uTokens[0], c);
   }
 
-  // dacă user a scris mai multe cuvinte,
-  // acceptăm dacă toate apar în răspunsul corect (ca tokens)
-  return uTokens.every(t => cTokens.includes(t));
+  // 2) dacă user a scris mai multe cuvinte:
+  // acceptăm dacă fiecare token user e prezent în soluție,
+  // fie exact, fie cu ±1 literă vs un token din soluție.
+  // (dar ignorăm token-urile generice din user: dacă scrie "stramtoarea" + "bering",
+  // "bering" decide, "stramtoarea" nu trebuie să strice)
+  const filtered = uTokens.filter(t => t.length >= 2); // păstrăm relevante
+  let hasSpecific = false;
+
+  for (const ut of filtered) {
+    if (GENERIC_TOKENS.has(ut)) continue;
+
+    hasSpecific = true;
+    const ok = cTokens.includes(ut) || cTokens.some(ct => editDistanceAtMost1(ut, ct));
+    if (!ok) return false;
+  }
+
+  // dacă user a scris doar termeni generici (ex: "stramtoarea"), nu acceptăm
+  return hasSpecific;
 }
 
 function isCorrectAnswer(userAnswer, correct){
   const correctList = Array.isArray(correct) ? correct : [correct];
 
-  // 1) exact / de-articulat (Nil/Nilul etc.)
+  // variantele user (normalizat + de-articulat)
   const userVars = answerVariants(userAnswer);
 
   for (const c of correctList) {
     const corrVars = answerVariants(c);
 
-    // exact match pe variante
+    // 1) match exact (incl. de-articulare)
     for (const uv of userVars) {
       if (corrVars.has(uv)) return true;
     }
 
-    // 2) partial match (Bering vs Strâmtoarea Bering)
-    // verificăm atât forma originală cât și de-articulată
+    // 2) match parțial + fuzzy (regulile tale)
     for (const uv of userVars) {
       if (isPartialMatch(uv, c)) return true;
     }
@@ -472,7 +559,7 @@ function isCorrectAnswer(userAnswer, correct){
     {q:"Cum se numește știința care studiază cutremurele?", c:"Seismologie", o:["Meteorologie","Seismologie","Ecologie","Astronomie"]},
     {q:"Care este capitala Argentinei?", c:"Buenos Aires", o:["Santiago","Montevideo","Buenos Aires","Lima"]},
 
-    {q:"Care este capitala Argentinei?", c:"Buenos Aires", o:["Santiago","Montevideo","Buenos Aires","Lima"]},
+    {q:"Care este capitala Ecuador?", c:"Quito", o:["Santiago","Quito","Ecuador city","Lima"]},
     {q:"Care este capitala Mexicului?", c:"Ciudad de México", o:["Guadalajara","Monterrey","Ciudad de México","Cancún"]},
     {q:"În ce sport se folosește termenul „checkmate”?", c:"Șah", o:["Șah","Go","Bridge","Dame"]},
     {q:"Care este capitala Thailandei?", c:"Bangkok", o:["Bangkok","Phuket","Chiang Mai","Pattaya"]},
@@ -497,7 +584,7 @@ function isCorrectAnswer(userAnswer, correct){
     {q:"Cine a scris „Procesul”?", c:"Franz Kafka", o:["Albert Camus","Franz Kafka","Thomas Mann","Hermann Hesse"]},
     {q:"Care este formula chimică a amoniacului?", c:"NH3", o:["NH3","NO2","H2S","CH4"]},
 
-    {q:"„Războiul de o sută de ani” a avut loc aproximativ în intervalul…", c:"1337–1453", o:["1215–1270","1337–1453","1492–1598","1618–1648"]},
+    {q:"„Primul razboi mondial a avut loc în intervalul…", c:"1914–1918", o:["1914–1918","1939–1945","1921–1925","1948–1958"]},
     {q:"Care este capitala Noii Zeelande?", c:"Wellington", o:["Auckland","Wellington","Christchurch","Dunedin"]},
     {q:"Creșterea frecvenței percepute din cauza mișcării sursei se numește…", c:"Efectul Doppler", o:["Efectul Hall","Efectul Doppler","Efectul Coriolis","Efectul Joule"]},
     {q:"Romanul care începe cu „Toate familiile fericite se aseamănă…” este…", c:"Anna Karenina", o:["Război și pace","Anna Karenina","Frații Karamazov","Madame Bovary"]},
@@ -505,16 +592,16 @@ function isCorrectAnswer(userAnswer, correct){
     {q:"Calea Lactee este o galaxie…", c:"Spirală barată", o:["Eliptică","Lenticulară","Spirală barată","Neregulată"]},
     {q:"Cea mai mare insulă din lume (excluzând continentele) este…", c:"Groenlanda", o:["Borneo","Madagascar","Groenlanda","Noua Guinee"]},
     {q:"„Flautul fermecat” a fost compus de…", c:"Mozart", o:["Verdi","Mozart","Puccini","Wagner"]},
-    {q:"Simbolul chimic al potasiului este…", c:"K", o:["P","Po","K","Pt"]},
+    {q:"Simbolul chimic al hidrogenului este…", c:"H", o:["He","H","Hi","Hd"]},
     {q:"Tratatul care a pus capăt WWI pentru Germania este…", c:"Tratatul de la Versailles", o:["Trianon","Versailles","Brest-Litovsk","San Stefano"]},
 
     { q:"Ce perioadă istorică este asociată cu „Războiul de o sută de ani”?", c:"1337–1453", o:["1215–1270","1337–1453","1492–1598","1618–1648"] },
-    { q:"Care este capitala Noii Zeelande?", c:"Wellington", o:["Auckland","Wellington","Christchurch","Dunedin"] },
-    { q:"Cum se numește efectul creșterii frecvenței percepute din cauza mișcării sursei?", c:"Efectul Doppler", o:["Efectul Hall","Efectul Doppler","Efectul Coriolis","Efectul Joule"] },
-    { q:"Ce roman începe cu fraza „Toate familiile fericite se aseamănă…”?", c:"Anna Karenina", o:["Război și pace","Anna Karenina","Frații Karamazov","Madame Bovary"] },
+    { q:"Care este capitala Africii de Sud?", c:"Johannesburg", o:["Addis Abeba","Wellington","Christchurch","Johannesburg"] },
+    { q:"Principiul conform caruia 80% din rezultate provin din 20% de eforturi se numeste", c:"Pareto", o:["Efectul Hall","Pareto","Coriolis","Principiul inversării"] },
+    { q:"Stefan Gheorghidiu este un personaj din romanul...”, c:"Ultima noapte de dragoste, intaia noapte de razboi", o:["Război și pace","Ultima noapte de dragoste, intaia noapte de razboi","Frații Karamazov","Enigma Otiliei"] },
     { q:"Care este capitala Pakistanului?", c:"Islamabad", o:["Karachi","Lahore","Islamabad","Peshawar"] },
-    { q:"Ce element chimic are numărul atomic 26?", c:"Fier", o:["Cobalt","Nichel","Fier","Cupru"] },
-    { q:"Ce tip de galaxie este Calea Lactee?", c:"Spirală barată", o:["Eliptică","Lenticulară","Spirală barată","Neregulată"] },
+    { q:"Ce element chimic are numărul atomic 8?", c:"Oxigen", o:["Carbon","Azot","Fier","Oxigen"] },
+    { q:"Care este a patra planeta de la soare?", c:"Marte", o:["Marte","Pamant","Jupiter","Neptun"] },
     { q:"Care este cea mai mare insulă din lume (fără continente)?", c:"Groenlanda", o:["Borneo","Madagascar","Groenlanda","Noua Guinee"] },
     { q:"Ce compozitor a scris opera „Flautul fermecat”?", c:"Mozart", o:["Verdi","Mozart","Puccini","Wagner"] },
     { q:"Care este simbolul chimic al potasiului?", c:"K", o:["P","Po","K","Pt"] },
@@ -525,7 +612,7 @@ function isCorrectAnswer(userAnswer, correct){
     { q:"Care este capitala Etiopiei?", c:"Addis Abeba", o:["Nairobi","Addis Abeba","Khartoum","Kampala"] },
     { q:"Ce lanț muntos separă Europa de Asia în mod tradițional?", c:"Ural", o:["Alpi","Caucaz","Ural","Carpați"] },
     { q:"Cum se numește procesul de transformare a ARN-ului mesager în proteină?", c:"Translație", o:["Transcripție","Translație","Replicare","Mutație"] },
-    { q:"Ce tratat a pus capăt Primului Război Mondial pentru Germania?", c:"Tratatul de la Versailles", o:["Trianon","Versailles","Brest-Litovsk","San Stefano"] },
+    { q:"Cine a inventat si folosit tehnica Blitzkrieg?", c:"Germania", o:["Austria","Cehia","Polonia","Germania"] },
     { q:"Care este capitala Sri Lankăi (administrativă)?", c:"Sri Jayawardenepura Kotte", o:["Colombo","Kandy","Galle","Sri Jayawardenepura Kotte"] },
     { q:"Ce matematician este asociat cu „Ultima teoremă” care i-a purtat numele?", c:"Fermat", o:["Euler","Gauss","Fermat","Riemann"] },
     { q:"Care este cea mai mare lună a lui Saturn?", c:"Titan", o:["Europa","Titan","Ganymede","Triton"] },
@@ -549,7 +636,7 @@ function isCorrectAnswer(userAnswer, correct){
     { q:"Cum se numește reacția de obținere a săpunului din grăsimi?", c:"Saponificare", o:["Polimerizare","Saponificare","Sublimare","Oxidare"] },
     { q:"Ce fluviu traversează orașul Budapesta?", c:"Dunărea", o:["Tisa","Dunărea","Elba","Oder"] },
     { q:"Cine a compus „Carmina Burana”?", c:"Carl Orff", o:["Carl Orff","Mahler","Stravinski","Debussy"] },
-    { q:"Ce element are simbolul W?", c:"Wolfram", o:["Wolfram","Wismut","Wolfram (Tungsten)","Wolfram"] },
+    { q:"Ce element are simbolul W?", c:"Wolfram", o:["Wolfram","Wismut","Watt","Wuraniu"] },
     { q:"Care este capitala Marocului?", c:"Rabat", o:["Casablanca","Marrakech","Rabat","Fez"] },
     { q:"În ce an a avut loc Revoluția Franceză (începutul uzual)?", c:"1789", o:["1648","1713","1789","1815"] },
     { q:"Ce instrument de navigație indică nordul magnetic?", c:"Busolă", o:["Sextant","Busolă","Barometru","Altimetru"] },
@@ -868,8 +955,35 @@ function isCorrectAnswer(userAnswer, correct){
   }
 
   function checkOption(btn, opt){
-    showResult(isCorrectAnswer(opt, currentQ().c), btn);
+  // Dacă utilizatorul a ales una din variante, considerăm corect
+  // dacă varianta aleasă este "varianta corectă" din lista de opțiuni a întrebării.
+  const q = currentQ();
+
+  // Determinăm care opțiune din q.o corespunde răspunsului corect (q.c).
+  // Acceptăm și cazurile când q.c e listă de sinonime.
+  const correctList = Array.isArray(q.c) ? q.c : [q.c];
+
+  // Găsim indexul opțiunii corecte în lista originală de opțiuni (q.o)
+  let correctIdx = -1;
+  for (let i = 0; i < q.o.length; i++) {
+    const optionText = q.o[i];
+    if (correctList.some(c => isCorrectAnswer(optionText, c) || isCorrectAnswer(c, optionText))) {
+      correctIdx = i;
+      break;
+    }
   }
+
+  // Indexul opțiunii selectate
+  const chosenIdx = q.o.indexOf(opt);
+
+  // fallback: dacă nu găsim index, revenim la verificarea textului (să nu se rupă)
+  const ok = (correctIdx !== -1 && chosenIdx !== -1)
+    ? (chosenIdx === correctIdx)
+    : isCorrectAnswer(opt, q.c);
+
+  showResult(ok, btn);
+}
+
 
   function checkTextAnswer(){
     const val = document.getElementById("textAnswer").value;
@@ -898,12 +1012,37 @@ function isCorrectAnswer(userAnswer, correct){
     badge.style.display = "block";
 
     if(gameState === "testDone"){
-      badge.innerText = scoreTest >= UNLOCK_THRESHOLD
-        ? `Ai deblocat Testul ${Math.min(testIndex+2, totalTests())}!`
-        : `Nu ai deblocat următorul test. (Ai nevoie de minim ${UNLOCK_THRESHOLD}/10)`;
-    } else {
-      badge.innerText = `Felicitări! Ai terminat modul ${mode === "hard" ? "Hard" : "Mix"}!`;
-    }
+  const unlockedTest = (scoreTest >= UNLOCK_THRESHOLD) ? Math.min(testIndex + 1, totalTests() - 1) : null;
+
+  if (unlockedTest !== null && unlockedTest > testIndex) {
+    badge.innerText = `Ai deblocat Testul ${unlockedTest + 1}! (apasă aici)`;
+    badge.classList.add("clickable");
+
+    // click -> pornește testul deblocat
+    badge.onclick = () => {
+      // închide orice overlay (sigur)
+      showOverlay("overlayTests", false);
+      showOverlay("overlayMode", false);
+
+      // pornește direct testul deblocat
+      startTest(unlockedTest);
+
+      // ascunde badge după click (opțional)
+      badge.style.display = "none";
+      badge.onclick = null;
+      badge.classList.remove("clickable");
+    };
+  } else {
+    badge.innerText = `Nu ai deblocat următorul test. (Ai nevoie de minim ${UNLOCK_THRESHOLD}/10)`;
+    badge.classList.remove("clickable");
+    badge.onclick = null;
+  }
+} else {
+  badge.innerText = `Felicitări! Ai terminat modul ${mode === "hard" ? "Hard" : "Mix"}!`;
+  badge.classList.remove("clickable");
+  badge.onclick = null;
+}
+
 
     document.getElementById("answers").style.display = "none";
     document.getElementById("answers").innerHTML = "";
