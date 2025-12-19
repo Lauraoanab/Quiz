@@ -1015,7 +1015,7 @@ function isCorrectAnswer(userAnswer, correct){
   const unlockedTest = (scoreTest >= UNLOCK_THRESHOLD) ? Math.min(testIndex + 1, totalTests() - 1) : null;
 
   if (unlockedTest !== null && unlockedTest > testIndex) {
-    badge.innerText = `Ai deblocat Testul ${unlockedTest + 1}! (apasă aici)`;
+    badge.innerText = `Ai deblocat Testul ${unlockedTest + 1}!`;
     badge.classList.add("clickable");
 
     // click -> pornește testul deblocat
